@@ -7,8 +7,12 @@ import (
 	"strings"
 )
 
-// Load reads the .env file in the current directory and sets the environment variables.
-// The .env file should be in the format of KEY=VALUE.
+// load reads the .env file in the current directory and sets the environment variables.
+// the .env file should be in the format of KEY=VALUE.
+//
+// the function will only use keys that are listing in the .env file, however, if the key
+// is already set in the system environment, it will be overwritten by the system environment.
+// only variables that are set in the .env file, will be loaded from the system environment.
 func Load() error {
 	dir, err := os.Getwd()
 
@@ -43,7 +47,17 @@ func Load() error {
 			return fmt.Errorf("env: invalid .env file format")
 		}
 
-		if err := os.Setenv(values[0], values[1]); err != nil {
+		key := values[0]
+
+		if value, ok := os.LookupEnv(key); ok {
+			if err := os.Setenv(key, value); err != nil {
+				return fmt.Errorf("env: error setting environment variable: %v", err)
+			}
+
+			continue
+		}
+
+		if err := os.Setenv(key, values[1]); err != nil {
 			return fmt.Errorf("env: error setting environment variable: %v", err)
 		}
 	}
